@@ -1,122 +1,140 @@
-***HanakoBotz | 1.2.5*** | ***Create By: deku || base: script Axel network***
+***ZeeBot | 1.0.0*** | ***Created by: KanekiCraynet || Base: Terinspirasi dari HanakoBotz, tapi dengan sentuhan masa depan yang berbeda***
 
-![Logo](https://files.catbox.moe/movzsb.jpg)
+![Logo ZeeBot](https://files.catbox.moe/movzsb.jpg)  
 
-***By creator:***
-![logo](https://files.catbox.moe/nogonh.png)
+***By Creator:***  
+![Logo Creator](https://files.catbox.moe/nogonh.png)
 
-```> Simple WhatsApp bot Using Library Baileys```
+```bash
+> Simple WhatsApp Bot menggunakan Library Baileys dengan inovasi terkini
+```
+
+---
+
+### Contoh Output Pesan
 
 ```javascript
 {
-  message: Message { conversation: '>_ Welcome to Hanako' },
+  message: Message { conversation: '>_ Selamat datang di ZeeBot' },
   type: 'conversation',
-  msg: '>_ Welcome to HanakoBotz',
+  msg: '>_ Selamat datang di ZeeBot',
   isMedia: false,
   key: {
-    remoteJid: '6283136099660@s.whatsapp.net',
-    participant: '6283136099660@s.whatsapp.net',
+    remoteJid: '628123456789@s.whatsapp.net',
+    participant: '628123456789@s.whatsapp.net',
     fromMe: false,
-    id: '5780C33F89C0BE600B6D71DF79C4FC02'
+    id: 'A1B2C3D4E5F6'
   },
-  cht: '6283136099660@s.whatsapp.net',
+  cht: '628123456789@s.whatsapp.net',
   fromMe: false,
-  id: '5780C33F89C0BE600B6D71DF79C4FC02',
+  id: 'A1B2C3D4E5F6',
   device: 'android',
   isBot: false,
   isGroup: false,
-  participant: '6283136099660@s.whatsapp.net',
-  sender: '6283136099660@s.whatsapp.net',
+  participant: '628123456789@s.whatsapp.net',
+  sender: '628123456789@s.whatsapp.net',
   mentions: [],
-  body: '>_ Welcome to HanakoBotz',
+  body: '>_ Selamat datang di ZeeBot',
   prefix: '',
   command: '>_',
-  args: [ 'Welcome', 'to', 'HanakoBotz' ],
-  text: 'Welcome to HanakoBotz',
+  args: [ 'Selamat', 'datang', 'di', 'ZeeBot' ],
+  text: 'Selamat datang di ZeeBot',
   isOwner: true,
   download: [AsyncFunction (anonymous)]
 }
 ```
-## ⚙️ Settings Bot ***( settings.js )***
+
+---
+
+## ⚙️ Pengaturan Bot (**settings.js**)
 
 ```javascript
 const config = {
-    owner: ["6283136099660"],
-    name: "ʜᴀɴᴀᴋᴏ-ᴋᴜɴ-ʙᴏᴛᴢ",
-    ownername: 'ʟᴇᴏᴏxᴢʏ', 
-    ownername2: 'ᴅᴇᴋᴜ',
-    prefix: [".", "?", "!", "/", "#"], //Tambahin sendiri prefix nya kalo kurang
-    wwagc: 'https://chat.whatsapp.com/JyeT1hdCPJeLy95tzx5eyI',
+    owner: ["628123456789"],
+    name: "ᴢᴇᴇ-ʙᴏᴛ", 
+    ownername: 'KanekiCraynet',
+    ownername2: 'Zee Master',
+    prefix: [".", "?", "!", "/", "#"], // Tambahkan prefix lain jika diperlukan
+    wwagc: 'https://chat.whatsapp.com/YourChatGroupLink',
     saluran: '120363279195205552@newsletter', 
     jidgroupnotif: '120363266755712733@g.us', 
     saluran2: '120363335701540699@newsletter', 
     jidgroup: '120363267102694949@g.us', 
-    wach: 'https://whatsapp.com/channel/0029VadFS3r89inc7Jjus03W', 
+    wach: 'https://whatsapp.com/channel/YourChannelLink', 
     sessions: "sessions",
     sticker: {
-      packname: "〆 ʜᴀɴᴀᴋᴏ-ᴋᴜɴ-ʙᴏᴛᴢ",
-      author: "ʙʏ: ᴅᴇᴋᴜ/ʟᴇᴏᴏxᴢʏ 〆"
+      packname: "〆 ZeeBot",
+      author: "By: KanekiCraynet"
     },
-   messages: {
-      wait: "*( Loading )* Tunggu Sebentar...",
-      owner: "*( Denied )* Kamu bukan owner ku !",
-      premium: "*( Denied )* Fitur ini khusus user premium",
-      group: "*( Denied )* Fitur ini khusus group",
-      botAdmin: "*( Denied )* Lu siapa bukan Admin group",
-      grootbotbup: "*( Denied )* Jadiin Yuta-Botz admin dulu baru bisa akses",
-   },
-   database: "hanako-db",
-   tz: "Asia/Jakarta"
+    messages: {
+      wait: "*( Sedang memproses )* Harap tunggu sebentar...",
+      owner: "*( Akses Ditolak )* Kamu bukan pemilik bot!",
+      premium: "*( Akses Ditolak )* Fitur ini khusus untuk pengguna premium.",
+      group: "*( Akses Ditolak )* Fitur ini hanya dapat digunakan dalam grup.",
+      botAdmin: "*( Akses Ditolak )* Bot harus menjadi admin terlebih dahulu.",
+      error: "*( Error )* Terjadi kesalahan. Silakan coba lagi."
+    },
+    database: "zeebot-db",
+    tz: "Asia/Jakarta"
 }
 
 module.exports = config
 ```
 
+---
 
-## 👨‍💻 How to install/run
+## 👨‍💻 Cara Install/Run
 
+Untuk menjalankan ZeeBot, ikuti langkah berikut (lebih simpel dari resep rahasia nenek, namun sama efektifnya):
 
 ```bash
-$ git clone https://github.com/FrankXz12/HanakoBotz
-$ cd HanakoBotz
+$ git clone https://github.com/KanekiCraynet/ZeeBot
+$ cd ZeeBot
 $ npm install
 $ npm start
 ```
 
-## ☘️ Example Features
-Berikut cara menambahkan fitur pada bot ini
+---
 
-## 1. Plugins
+## ☘️ Contoh Fitur
+
+Berikut adalah cara menambahkan fitur baru ke ZeeBot:
+
+### 1. Plugins
 
 ```javascript
-
 module.exports = {
-    command: "tes", //- Nama fitur nya
-    alias: ["tesbot", "testing"], //- Short cut command
-    category: ["main"], //- Kategori Fitur 
+    command: "tes", // Nama fitur
+    alias: ["testbot", "cekbot"], // Alias command
+    category: ["utility"], // Kategori fitur
     settings: {
-        owner: false, //-  Apakah Fitur ini khusus owner ?
-        group: false, // - Apakah Fitur ini khusus group ?
-     },
-    description: "Tes bot saja", //- Penjelasan tentang fitur nya
-    loading: true, //- Ingin menambahkan loading messages ?
- async run(m, { sock, client, conn, DekuGanz, Func, Scraper, text, config }) {
-    m.reply("> Bot Online ✓")
-  }
+        owner: false, // Apakah fitur ini khusus untuk owner?
+        group: false, // Apakah fitur ini khusus untuk grup?
+    },
+    description: "Tes keaktifan ZeeBot", // Deskripsi fitur
+    loading: true, // Menggunakan pesan loading?
+    async run(m, { sock, client, conn, text, config }) {
+      m.reply("> Bot ZeeBot aktif dan siap digunakan!")
+    }
 }
 ```
-## 2. Case
+
+### 2. Penggunaan Kasus (Case)
 
 ```javascript
 case "tes" : {
-     m.reply("> Bot Online ✓")
-   }
+    m.reply("> Bot ZeeBot aktif dan siap digunakan!")
+}
 break
 ```
-## 📢 Jgn Lupa Follow Channel dan Join Group ya
 
-**Base Sc: https://whatsapp.com/channel/0029Vb0YWvYJ3jusF2nk9U1P**
+---
 
-**Ch-1: https://whatsapp.com/channel/0029VadFS3r89inc7Jjus03W**
+## 📢 Jangan Lupa untuk Follow Channel dan Join Group
 
-**Ch-2: https://whatsapp.com/channel/0029VateyJuKWEKhJMRKEL20**
+Meskipun ZeeBot kini tampil dengan wajah baru, dukungan komunitas tetap krusial. Bergabunglah dengan channel dan grup kami untuk update terbaru, diskusi, dan tentu saja, candaan santai ala developer!
+
+**Channel Utama: [Your Channel Link]**  
+**Grup Diskusi: [Your Group Link]**
+
+---

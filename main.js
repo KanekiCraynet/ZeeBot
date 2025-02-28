@@ -1,91 +1,129 @@
 /**
- - < ! > Script: Yuta-Okkotsu
- - Base: Axel
- - Remake: Dekuganz
-**/
-  
+ * ZeeBot - WhatsApp Bot Framework
+ * 
+ * Originally based on Yuta-Okkotsu by Axel
+ * Optimized version by Claude
+ * Original creator: Dekuganz
+ */
+
+'use strict';
+
 (async () => {
+  // Import required modules
   const {
     default: makeWASocket,
     useMultiFileAuthState,
     jidNormalizedUser,
-    fetchLatestBaileysVersion,
     Browsers,
     proto,
     makeInMemoryStore,
     DisconnectReason,
-    delay,
-    generateWAMessage,
     getAggregateVotesInPollMessage,
     areJidsSameUser,
   } = require("baileys");
+  
+  // System modules
   const pino = require("pino");
   const { Boom } = require("@hapi/boom");
   const chalk = require("chalk");
   const readline = require("node:readline");
-  const simple = require("./lib/simple.js");
   const fs = require("node:fs");
-  const pkg = require("./package.json");
-  const Func = require("./lib/function.js");
+  const path = require("node:path");
   const moment = require("moment-timezone");
+  
+  // Local modules
+  const simple = require("./lib/simple.js");
+  const Func = require("./lib/function.js");
   const Queque = require("./lib/queque.js");
-  const messageQueue = new Queque();
   const Database = require("./lib/database.js");
-  const append = require("./lib/append");
   const serialize = require("./lib/serialize.js");
   const config = require("./settings.js");
-
-  const appenTextMessage = async (m, sock, text, chatUpdate) => {
-    const client = conn = DekuGanz = sock
-    let messages = await generateWAMessage(
+  const pkg = require("./package.json");
+  
+  // Initialize message queue
+  const messageQueue = new Queque();
+  
+  // Define global variables to prevent reference errors
+  global.client = global.conn = global.DekuGanz = null;
+  
+  /**
+   * Appends a text message to the chat
+   * @param {Object} m - Message object
+   * @param {Object} sock - Socket connection
+   * @param {String} text - Text message to append
+   * @param {Object} chatUpdate - Chat update object
+   * @returns {Promise}
+   */
+  const appendTextMessage = async (m, sock, text, chatUpdate) => {
+    // Use the sock parameter directly
+    let messages = await sock.generateWAMessage(
       m.key.remoteJid,
-      {
-        text: text,
-      },
-      {
-        quoted: m.quoted,
-      },
+      { text },
+      { quoted: m.quoted }
     );
+    
     messages.key.fromMe = areJidsSameUser(m.sender, sock.user.id);
     messages.key.id = m.key.id;
     messages.pushName = m.pushName;
+    
     if (m.isGroup) messages.participant = m.sender;
+    
     let msg = {
       ...chatUpdate,
       messages: [proto.WebMessageInfo.fromObject(messages)],
       type: "append",
     };
+    
     return sock.ev.emit("messages.upsert", msg);
   };
 
+  /**
+   * Creates an interactive CLI question
+   * @param {String} text - Question text
+   * @returns {Promise<String>} - User response
+   */
   const question = (text) => {
     const rl = readline.createInterface({
       input: process.stdin,
       output: process.stdout,
     });
+    
     return new Promise((resolve) => {
-      rl.question(text, resolve);
+      rl.question(text, (answer) => {
+        rl.close();
+        resolve(answer);
+      });
     });
   };
-  global.db = new Database(config.database + ".json");
+  
+  // Initialize database
+  global.db = new Database(`${config.database}.json`);
   await db.init();
 
-  global.pg = new (await require(process.cwd() + "/lib/plugins"))(
-    process.cwd() + "/system/plugins",
+  // Initialize plugins
+  global.pg = new (await require(path.join(process.cwd(), "/lib/plugins")))(
+    path.join(process.cwd(), "/system/plugins")
   );
   await pg.watch();
 
-  global.scraper = new (await require(process.cwd() + "/scrapers"))(
-    process.cwd() + "/scrapers/src",
+  // Initialize scrapers
+  global.scraper = new (await require(path.join(process.cwd(), "/scrapers")))(
+    path.join(process.cwd(), "/scrapers/src")
   );
   await scraper.watch();
 
+  // Auto-save and reload
   setInterval(async () => {
-    await db.save();
-    await pg.load();
-    await scraper.load();
-  }, 2000);
+    try {
+      await db.save();
+      await pg.load();
+      await scraper.load();
+    } catch (error) {
+      console.error('Error during auto-save:', error);
+    }
+  }, 5000); // Increased interval for better performance
 
+  // Initialize in-memory store
   const store = makeInMemoryStore({
     logger: pino().child({
       level: "silent",
@@ -93,182 +131,183 @@
     }),
   });
   
+  // Display welcome banner
   console.log(chalk.blue.bold(`
-  %%%%%%%%%%%%%%%%%%%%S%%%%%%%%%%%%%%%%%%%%%%SSSSSSSSSSSSSS%%SSSS%%%%%?%SSSSSSSSSSSSSSSSSS%%
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%SSSSSSSSSSSSSS%%SSSS%%%%%?%SSSSSSSSSSSSSSSSSS%%
 %SSSS%%%%%%%%%%%SS%%SS%%%%%%%%%%%%%%%%%%%%%SSSSSSSSSSSSSSSSSSSSS%%%%%%SSSSSSSSSSSSSSSSSSSS
 SSSSSSSSSS%%%%SSSSSSSS%SS%%S%S%%%%%%%%**%%%SSSSSSSSSSSSSSSSSSS%??%%SS%%SSSSSSSSSSSSSSSSSSS
-SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS%%S%%%*:;?%%%?SS%S%%SSSSSSSS%?*;;??%SSSSSSSSSS####SSSSSSSSS
-%%%%SSSS%%%%%SSSSSSSSSSSSSS%%**%%%%%+,:;+*++**;;++%?**?%%?+;:::;*?SSSSSSSSSSS####SSSSSSSSS
-SSSSSSS%%%%%%%%%%%%%%%%%%%%%?;:*?*?+,,:;::::::::;;;++;;;:,,:;;+*?SSSSSSSSSSSSS####SSSSSSSS
-SSSSSSSSS%%SSSSSSSSSSSSSS%%%?:,:++;,,,:;:,,:;;::;;;;:,,,,:::;+*?%%??%%%SSSSSSSS#####SSSSS#
-SSSSSSSSSSSSSSSSSSSSSSSSSS%%*,,,::,,,,:;:,:::,,,::::,,,,,,:;;+;;;::;*?SSSSSSS#SS#######SSS
-SSSSSSSSSSSSSSSSSS%SSSSSSS%%+,,,,,,,,,::,,,,,,,,,:::,,,,,,:::::::+*%SSSSS%%SSSSSS#@@###SSS
-SSSSSSSSSSSSS%????*+*??%%%?*;,,,,,,,,,,,,,,,,,::;+;;:::::,,,,:::::;;;;;;;;;;+?%SS#@@@####S
-SSSSSSSSSSSSS??????+:::;+**+:,,,,,,,,,,,,,,,,:::;;;;:::::::::,,,::,,::::;;+*??%%%%SS%S####
-SSSSSSSSSSSSS??????%+::,,,:::,,,,,,,,,,,,,,,,,,,,:::::::,,,,,,,:::;;;;+++*?%??%%%%%%?%#@##
-SSSSSSSSSSSSS%?????%?*::,,,,,,,,,,,,,,,,,,,,:,:::,,,,,,:,,,,:::::::::::::;+**???%%%%%%#@@#
-SSSSSSSSSSSSS%?%?***++:::,:,::,,,,,,,,,,,,,,:::;;:,,,,,,,,,,,::;;;::::::,,,,::;;+*?%%%#@@@
-SSSSSSSSSSSSS%??**++::,:::::::,,,,,,,,,,,,,,,:::;;,,,,,,,,::,,,,,,:,,,::;;;;+++*?%%%%%#@@@
-###S#SSSSSSSS?+;;::::::::::::,,,,,,,,,,,,:,,,,,,,::,,,,,,,::::,,,,:;;;:;;+++++*%%%%%%%#@@@
-##SS##SSSSSSS%%??**+++++;;:,:::,,,,,::::;:,,,,,,,,,,,,,,,,,::;::,,:;++++++;;::;+*%%%%%###@
-SSSSSSSS#SSS#S%S%%??*++;:;;;+:,,,,,::::::,,,,,,,,,,,,,,::,,,::::::,:;;:::;:::::::;*?%%##S#
-##S###S####S#SSS%%%?**+***++:::::,,:,:::,,:;:,,,::,,,,::::::::::::,,,::::::::;+*???%%S####
-#############SS%????***?*+::;+++:,:::::::;+++:,:::,::,:;:::;+:::;+;;;::::;++++*?SS%SSS#@@@
-#############SSSS%%?*??**++***+;:::::;;;++;:;;:::,:;:::;:,:;+;:::;;:::::;:;*****%SSSSS#@@@
-#############SSSS%???????*****;:;;::+;;;:::::;::::++;:::+::::;;:++;:;:::++++***??%%SSS#@@@
-#############S######S??????***+**;:;;:::::::::;::+**;:::;+::+;;:;**+++;:;*****??SSSSSS#@@@
-#############@@@@@@#???**?????*?*:+*;;+;;::::;+;*;+?+;;;;++:+*+;:+*?**?*;+*????%%SSSSS#@@@
-#############@@@@@@S%SS%???*%?***+??***+++::;***;:;****++;*++***+;*????%?*%%%S%%SSSSSS##@@
-##############@@@@@@@@##????SS%??*%%%???***;*??*;;;+**;;;;;***???**%S????SSS%SSSSSSSSS#@@@
-#@###########SS@@@@@@@@@%?%%S#S?%?%????S%??*?%%?*+**?;:;;;;+*%?*%S?%##SSSS#S%SSSSSSSSS##@@
-@@@####@#@#@##S#@@@@@@@@#SS%SSSS%?%%???SSS%?S#%%??%??+;:::;++?%%%S%%#######S%SSSSSSSSS@@#@
-@@@@#@@@@@@@@####@@@@@@@@@@@####%SSSS??S%S%%SS%%%%%?+;:::::+***??%%S@#######%SSSSSSSSS@@@@
-@@@@@@@@@@@@@####@@@@@@@@@@@@@@@###SSS%S%%S%%%?*?++;::::::;;;+;;+%%S@@@@@@@##SSS######@@@@
-@@@@@@@@@@@@@###@@@@@@@@@@@@@@@@#####SSS%%%%%%%+;;;;;;:::;+;:;;;?SS@@@@@@@@@@##########@@@
-@@@@@@@@@@@@@#@@@@@@@@@@@@@@@@@@@######S%SSS%%S?+;;;;;;;;;;;;;;*%#@@@@@@@@@@S#########@@@@
-@@@@###@###@@@@@@@@@@@@@@@@@@@@@@##@#####SSS%%S%%%*+;;;;;;;;;;?S#@@@@@@@@@@#S#########@@@@
-@@@@@@@@####SSS##@@@@@@@@@@@@@@@@@#@@@#@@#SSSSSSS%%%*****???%%S#@@@@@@@@@@@###########@@@@
-#####@@@@@@@@@@@#####@@@@@@@@@@@@@@@#@@@@@@##SSSSSSSS%%SSS%?SS#@@@@@@@@@@@@###########@@@@
-?????%SS#@@@@@@@###@@@@#@@@@@@@@@@@@@@@@@@@@@######SSSSSS%*?%#@@@@@@@@@@@@@@@#SS######@@@@
-%%%%%%%%%%#@@@@@@@@@@####@@@@@@@@@@@@@@@@@@@@@@@@##SSSSSS%%S@@@@@@@@@@@@@@@@@@#S##@###@@@@
-%%%%%%%%%SS@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@##@@@#@@@@@
-S%%%%%%%%%%SS#@@@@@@@@@##@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@##@@@@@@@@@
-#SSSSSSS%%%%SS#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@#@@@@@@@@@
-SSS###SSSSS######@@@@@@@@#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@##@@@@@@@@
-SSSSSSS####@@@@###@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@#@@@@@@@@
-SSSSSSS##@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-#######@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@######@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-  Welcome to Script Yuta-Okkotsu-Botz / DekuGanz`))
-  console.log(chalk.blue.bold(`By: DekuGanz`))
+  Welcome to ZeeBot WhatsApp Integration`));
+  console.log(chalk.blue.bold(`Based on Yuta-Okkotsu-Botz / DekuGanz`));
   
-  console.log(chalk.yellow.bold("📁     Inisialisasi modul..."));
-  console.log(chalk.cyan.bold("- API Baileys Telah Dimuat"));
-  console.log(chalk.cyan.bold("- Sistem File Siap Digunakan"));
-  console.log(chalk.cyan.bold("- Database Telah Diinisialisasi"));
+  // Display initialization info
+  console.log(chalk.yellow.bold("📁     Initializing modules..."));
+  console.log(chalk.cyan.bold("- Baileys API Loaded"));
+  console.log(chalk.cyan.bold("- File System Ready"));
+  console.log(chalk.cyan.bold("- Database Initialized"));
 
-  console.log(chalk.blue.bold("\n🤖 Info Bot:"));
+  console.log(chalk.blue.bold("\n🤖 Bot Info:"));
   console.log(chalk.white.bold("  | GitHub: ") + chalk.cyan.bold("https://github.com/LeooxzyDekuu"));
   console.log(chalk.white.bold("  | Developer: ") + chalk.green.bold("Leooxzy/Deku"));
   console.log(chalk.white.bold("  | Base Script: ") + chalk.green.bold("AxellNetwork"));
   console.log(chalk.white.bold("  | Status Server: ") + chalk.green.bold("Online"));
-  console.log(chalk.white.bold("  | Versi: ") + chalk.magenta.bold(pkg.version));
-  console.log(chalk.white.bold("  | Versi Node.js: ") + chalk.magenta.bold(process.version));
+  console.log(chalk.white.bold("  | Version: ") + chalk.magenta.bold(pkg.version));
+  console.log(chalk.white.bold("  | Node.js Version: ") + chalk.magenta.bold(process.version));
   
-  console.log(chalk.blue.bold("\n🔁 Memuat plugin dan scraper...")) 
+  console.log(chalk.blue.bold("\n🔁 Loading plugins and scrapers..."));
 
-  async function system() {
-    const { state, saveCreds } = await useMultiFileAuthState(config.sessions);
-    const sock = simple(
-      {
-        logger: pino({ level: "silent" }),
-        printQRInTerminal: false,
-        auth: state,
-        version: [2, 3000, 1019441105],
-        browser: Browsers.ubuntu("Edge"),
-      },
-      store,    
-    );
-    const client = conn = DekuGanz = sock
-    store.bind(sock.ev);
-    if (!sock.authState.creds.registered) {
-      console.log(
-        chalk.white.bold(
-          "- Silakan masukkan nomor WhatsApp Anda, misalnya +628xxxx",
-        ),
+  /**
+   * Main system function to initialize WhatsApp connection
+   * @returns {Object} Socket connection
+   */
+  async function startConnection() {
+    try {
+      // Initialize session state - Fix for sessions error
+      const { state, saveCreds } = await useMultiFileAuthState(config.sessions);
+      
+      // Create WhatsApp socket connection
+      const sock = simple(
+        {
+          logger: pino({ level: "silent" }),
+          printQRInTerminal: false,
+          auth: state,
+          version: [2, 3000, 1019441105],
+          browser: Browsers.ubuntu("Edge"),
+          connectTimeoutMs: 60000,
+          keepAliveIntervalMs: 30000,
+          retryRequestDelayMs: 2000,
+        },
+        store,    
       );
-      const phoneNumber = await question(chalk.green.bold(`– Nomor Anda: `));
-      const code = await sock.requestPairingCode(phoneNumber, "LEOODEKU")
-      setTimeout(() => {
-        console.log(chalk.white.bold("- Kode Pairing Anda: " + code));
-      }, 3000);
-    }
+      
+      // Set global references
+      global.client = global.conn = global.DekuGanz = sock;
+      
+      // Bind store to socket events
+      store.bind(sock.ev);
+      
+      // Handle pairing code for new sessions
+      if (!sock.authState.creds.registered) {
+        console.log(
+          chalk.white.bold(
+            "- Please enter your WhatsApp number, e.g., +628xxxx",
+          ),
+        );
+        const phoneNumber = await question(chalk.green.bold(`– Your Number: `));
+        try {
+          const code = await sock.requestPairingCode(phoneNumber, "LEOODEKU");
+          setTimeout(() => {
+            console.log(chalk.white.bold("- Your Pairing Code: " + chalk.green.bold(code)));
+          }, 3000);
+        } catch (error) {
+          console.error(chalk.red.bold("Error requesting pairing code:"), error);
+          process.exit(1);
+        }
+      }
 
-    //=====[ Pembaruan Koneksi ]======
-    sock.ev.on("connection.update", async (update) => {
-      const { connection, lastDisconnect } = update;
-      if (connection === "close") {
-        const reason = new Boom(lastDisconnect?.error)?.output.statusCode;
-        if (lastDisconnect.error == "Error: Stream Errored (unknown)") {
-          process.exit(0)
-        } else if (reason === DisconnectReason.badSession) {
-          console.log(
-            chalk.red.bold("File sesi buruk, Harap hapus sesi dan scan ulang"),
-          );
-          process.exit(0)
-        } else if (reason === DisconnectReason.connectionClosed) {
-          console.log(
-            chalk.yellow.bold("Koneksi ditutup, sedang mencoba untuk terhubung kembali..."),
-          );
-           process.exit(0)
-        } else if (reason === DisconnectReason.connectionLost) {
-          console.log(
-            chalk.yellow.bold("Koneksi hilang, mencoba untuk terhubung kembali..."),
-          );
-          process.exit(0)
-        } else if (reason === DisconnectReason.connectionReplaced) {
+      // Connection update handler
+      sock.ev.on("connection.update", async (update) => {
+        const { connection, lastDisconnect } = update;
         
-          console.log(
-            chalk.green.bold("Koneksi diganti, sesi lain telah dibuka. Harap tutup sesi yang sedang berjalan."),
-          );
-          sock.logout();
-        } else if (reason === DisconnectReason.loggedOut) {
-          console.log(
-            chalk.green.bold("Perangkat logout, harap scan ulang."),
-          );
-          sock.logout();
-        } else if (reason === DisconnectReason.restartRequired) {
-          console.log(chalk.green.bold("Restart diperlukan, sedang memulai ulang..."));
-          system();
-        } else if (reason === DisconnectReason.timedOut) {
-          console.log(
-            chalk.green.bold("Koneksi waktu habis, sedang mencoba untuk terhubung kembali..."),
-          );
-          process.exit(0)
+        if (connection === "close") {
+          const reason = new Boom(lastDisconnect?.error)?.output.statusCode;
+          console.log(chalk.yellow.bold(`Connection closed. Reason: ${lastDisconnect?.error || "Unknown"}`));
+          
+          switch (reason) {
+            case DisconnectReason.badSession:
+              console.log(chalk.red.bold("Bad session file. Please delete session and scan again"));
+              process.exit(1);
+              break;
+              
+            case DisconnectReason.connectionClosed:
+              console.log(chalk.yellow.bold("Connection closed, attempting to reconnect..."));
+              process.exit(0);
+              break;
+              
+            case DisconnectReason.connectionLost:
+              console.log(chalk.yellow.bold("Connection lost, attempting to reconnect..."));
+              process.exit(0);
+              break;
+              
+            case DisconnectReason.connectionReplaced:
+              console.log(chalk.green.bold("Connection replaced, another session opened. Please close current session."));
+              sock.logout();
+              break;
+              
+            case DisconnectReason.loggedOut:
+              console.log(chalk.green.bold("Device logged out, please scan again."));
+              sock.logout();
+              break;
+              
+            case DisconnectReason.restartRequired:
+              console.log(chalk.green.bold("Restart required, restarting..."));
+              startConnection();
+              break;
+              
+            case DisconnectReason.timedOut:
+              console.log(chalk.green.bold("Connection timed out, attempting to reconnect..."));
+              process.exit(0);
+              break;
+              
+            default:
+              if (lastDisconnect?.error == "Error: Stream Errored (unknown)") {
+                console.log(chalk.red.bold("Unknown stream error, restarting..."));
+                process.exit(0);
+              } else {
+                console.log(chalk.red.bold(`Unknown disconnect reason: ${reason}`));
+                startConnection();
+              }
+          }
+        } else if (connection === "connecting") {
+          console.log(chalk.blue.bold("Connecting to WhatsApp..."));
+        } else if (connection === "open") {
+          console.log(chalk.green.bold("Bot successfully connected."));
         }
-      } else if (connection === "connecting") {
-        console.log(chalk.blue.bold("Menghubungkan ke WhatsApp..."));
-      } else if (connection === "open") {
-        console.log(chalk.green.bold("Bot berhasil terhubung."));
-      }
-    });
+      });
 
-    //=====[ Setelah Pembaruan Koneksi ]========//
-    sock.ev.on("creds.update", saveCreds);
+      // Credentials update handler
+      sock.ev.on("creds.update", saveCreds);
 
-    sock.ev.on("contacts.update", (update) => {
-      for (let contact of update) {
-        let id = jidNormalizedUser(contact.id);
-        if (store && store.contacts)
-          store.contacts[id] = {
-            ...(store.contacts?.[id] || {}),
-            ...(contact || {}),
-          };
-      }
-    });
-
-    sock.ev.on("contacts.upsert", (update) => {
-      for (let contact of update) {
-        let id = jidNormalizedUser(contact.id);
-        if (store && store.contacts)
-          store.contacts[id] = { ...(contact || {}), isContact: true };
-      }
-    });
-
-    sock.ev.on("groups.update", (updates) => {
-      for (const update of updates) {
-        const id = update.id;
-        if (store.groupMetadata[id]) {
-          store.groupMetadata[id] = {
-            ...(store.groupMetadata[id] || {}),
-            ...(update || {}),
-          };
+      // Contacts update handler
+      sock.ev.on("contacts.update", (update) => {
+        for (const contact of update) {
+          const id = jidNormalizedUser(contact.id);
+          if (store && store.contacts) {
+            store.contacts[id] = {
+              ...(store.contacts?.[id] || {}),
+              ...(contact || {}),
+            };
+          }
         }
-      }
-    });
+      });
 
-    client.ev.on("group-participants.update", ({ id, participants, action }) => {
-    const metadata = store.groupMetadata[id];
-      if (metadata) {
+      // Contacts upsert handler
+      sock.ev.on("contacts.upsert", (update) => {
+        for (const contact of update) {
+          const id = jidNormalizedUser(contact.id);
+          if (store && store.contacts) {
+            store.contacts[id] = { ...(contact || {}), isContact: true };
+          }
+        }
+      });
+
+      // Groups update handler
+      sock.ev.on("groups.update", (updates) => {
+        for (const update of updates) {
+          const id = update.id;
+          if (store.groupMetadata[id]) {
+            store.groupMetadata[id] = {
+              ...(store.groupMetadata[id] || {}),
+              ...(update || {}),
+            };
+          }
+        }
+      });
+
+      // Group participants update handler
+      sock.ev.on("group-participants.update", ({ id, participants, action }) => {
+        const metadata = store.groupMetadata[id];
+        if (!metadata) return;
+        
         switch (action) {
           case "add":
           case "revoked_membership_requests":
@@ -279,67 +318,113 @@ SSSSSSS##@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@#@@@@@@@@@@@@@@@@@@@@@@
               })),
             );
             break;
+            
           case "demote":
           case "promote":
             for (const participant of metadata.participants) {
-              let id = jidNormalizedUser(participant.id);
+              const id = jidNormalizedUser(participant.id);
               if (participants.includes(id)) {
                 participant.admin = action === "promote" ? "admin" : null;
               }
             }
             break;
+            
           case "remove":
             metadata.participants = metadata.participants.filter(
               (p) => !participants.includes(jidNormalizedUser(p.id)),
             );
             break;
         }
-      }
-    });
+      });
 
-    async function getMessage(key) {
-      if (store) {
-        const msg = await store.loadMessage(key.remoteJid, key.id);
-        return msg;
-      }
-      return {
-        conversation: "HanakoBotz",
-      };
-    }
-
-    sock.ev.on("messages.upsert", async (cht) => {
-      if (cht.messages.length === 0) return;
-      const chatUpdate = cht.messages[0];
-      if (!chatUpdate.message) return;
-      const userId = chatUpdate.key.id;
-      global.m = await serialize(chatUpdate, sock, store);     
-      if (m.isBot) return;
-      require("./lib/logger.js")(m);      
-      if (!m.isOwner && db.list().settings.self) return;
-      await require("./system/handler.js")(m, sock, store);
-    });
-
-    sock.ev.on("messages.update", async (chatUpdate) => {
-      for (const { key, update } of chatUpdate) {
-        if (update.pollUpdates && key.fromMe) {
-          const pollCreation = await getMessage(key);
-          if (pollCreation) {
-            let pollUpdate = await getAggregateVotesInPollMessage({
-              message: pollCreation?.message,
-              pollUpdates: update.pollUpdates,
-            });
-            let toCmd = pollUpdate.filter((v) => v.voters.length !== 0)[0]
-              ?.name;
-            console.log(toCmd);
-            await appenTextMessage(m, sock, toCmd, pollCreation);
-            await sock.sendMessage(m.cht, { delete: key });
-          } else return false;
-          return;
+      // Message retrieval helper function
+      async function getMessage(key) {
+        if (store) {
+          try {
+            const msg = await store.loadMessage(key.remoteJid, key.id);
+            return msg || { conversation: config.name || "ZeeBot" };
+          } catch (error) {
+            console.error("Error loading message:", error);
+            return { conversation: config.name || "ZeeBot" };
+          }
         }
+        return { conversation: config.name || "ZeeBot" };
       }
-    });
 
-    return sock;
+      // New messages handler
+      sock.ev.on("messages.upsert", async (chat) => {
+        try {
+          if (!chat.messages || chat.messages.length === 0) return;
+          
+          const chatUpdate = chat.messages[0];
+          if (!chatUpdate.message) return;
+          
+          const userId = chatUpdate.key.id;
+          global.m = await serialize(chatUpdate, sock, store);
+          
+          if (m.isBot) return;
+          
+          // Log message
+          require("./lib/logger.js")(m);
+          
+          // Skip if self mode is enabled and sender is not owner
+          if (!m.isOwner && db.list().settings?.self) return;
+          
+          // Process message with handler
+          await require("./system/handler.js")(m, sock, store);
+        } catch (error) {
+          console.error("Error processing message:", error);
+        }
+      });
+
+      // Message updates handler (for polls)
+      sock.ev.on("messages.update", async (chatUpdate) => {
+        try {
+          for (const { key, update } of chatUpdate) {
+            if (update.pollUpdates && key.fromMe) {
+              const pollCreation = await getMessage(key);
+              if (!pollCreation) continue;
+              
+              const pollUpdate = await getAggregateVotesInPollMessage({
+                message: pollCreation?.message,
+                pollUpdates: update.pollUpdates,
+              });
+              
+              const selectedOption = pollUpdate.filter((v) => v.voters.length !== 0)[0]?.name;
+              if (!selectedOption) continue;
+              
+              console.log("Poll option selected:", selectedOption);
+              await appendTextMessage(m, sock, selectedOption, pollCreation);
+              await sock.sendMessage(m.chat, { delete: key });
+            }
+          }
+        } catch (error) {
+          console.error("Error processing message update:", error);
+        }
+      });
+
+      // Set up error handling for uncaught exceptions
+      process.on('uncaughtException', (err) => {
+        console.error('Uncaught Exception:', err);
+        // Prevent crash but log the error
+      });
+      
+      process.on('unhandledRejection', (reason, promise) => {
+        console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+        // Prevent crash but log the error
+      });
+
+      return sock;
+    } catch (error) {
+      console.error("Fatal error in startConnection:", error);
+      console.log(chalk.yellow.bold("Attempting to restart in 10 seconds..."));
+      
+      setTimeout(() => {
+        startConnection();
+      }, 10000);
+    }
   }
-  system();
+  
+  // Start the connection
+  startConnection();
 })();

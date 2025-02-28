@@ -1,38 +1,57 @@
 const fs = require('node:fs');
+const path = require('node:path');
 
+/**
+ * Konfigurasi utama untuk ZeeBot WhatsApp
+ * @type {Object}
+ */
 const config = {
-    owner: ["6285742719456"],
+    // [SECTION] - Bot Information
     name: "ʜᴀɴᴀᴋᴏ-ᴋᴜɴ-ʙᴏᴛᴢ",
-    ownername: 'ʟᴇᴏᴏxᴢʏ', 
+    tz: "Asia/Jakarta",
+    sessions: path.join(__dirname, 'sessions'),
+    database: "hanako-db",
+
+    // [SECTION] - Ownership
+    owner: ["6285742719456"],  // Nomor owner dalam format internasional tanpa +
+    ownername: 'ʟᴇᴏᴏxᴢʏ',
     ownername2: 'ᴅᴇᴋᴜ',
-    prefix: [".", "?", "!", "/", "#"], //Tambahin sendiri prefix nya kalo kurang
-    wwagc: '~',
-    saluran: '@newsletter', 
-    jidgroupnotif: '@g.us', 
-    saluran2: '@newsletter', 
-    jidgroup: '@g.us', 
-    wach: '', 
-    sessions: "sessions",
+
+    // [SECTION] - Message Configuration
+    prefix: [".", "?", "!", "/", "#"], // Prefix tambahkan dengan pemisah koma
+    wwagc: '~',  // Prefix untuk command group
+    
+    // [SECTION] - Group/Channel Settings
+    jidgroup: '@g.us',
+    jidgroupnotif: '@g.us',
+    saluran: '@newsletter',
+    saluran2: '@newsletter',
+    wach: '',  // ID WhatsApp Channel (jika ada)
+
+    // [SECTION] - Sticker Settings
     sticker: {
-      packname: "〆 ʜᴀɴᴀᴋᴏ-ᴋᴜɴ-ʙᴏᴛᴢ",
-      author: "ʙʏ: ᴅᴇᴋᴜ/ʟᴇᴏᴏxᴢʏ 〆"
+        packname: "〆 ʜᴀɴᴀᴋᴏ-ᴋᴜɴ-ʙᴏᴛᴢ",
+        author: "ʙʏ: ᴅᴇᴋᴜ/ʟᴇᴏᴏxᴢʏ 〆"
     },
-   messages: {
-      wait: "*( Loading )* Tunggu Sebentar...",
-      owner: "*( Denied )* Kamu bukan owner ku !",
-      premium: "*( Denied )* Fitur ini khusus user premium",
-      group: "*( Denied )* Fitur ini khusus group",
-      botAdmin: "*( Denied )* Lu siapa bukan Admin group",
-      grootbotbup: "*( Denied )* Jadiin Yuta-Botz admin dulu baru bisa akses",
-   },
-   database: "hanako-db",
-   tz: "Asia/Jakarta"
-}
 
-module.exports = config
+    // [SECTION] - System Messages
+    messages: {
+        wait: "*( Loading )* Tunggu Sebentar...",
+        owner: "*( Denied )* Perintah ini hanya untuk Owner!",
+        premium: "*( Denied )* Fitur ini khusus user premium",
+        group: "*( Denied )* Command hanya bisa digunakan di group",
+        botAdmin: "*( Denied )* Bot harus menjadi admin untuk eksekusi command ini",
+        grootbotbup: "*( Denied )* Jadikan bot sebagai admin terlebih dahulu",
+    }
+};
 
-let file = require.resolve(__filename);
-fs.watchFile(file, () => {
-   fs.unwatchFile(file);
-  delete require.cache[file];
+module.exports = config;
+
+// [SECTION] - Config File Watcher
+const configPath = path.resolve(__filename);
+fs.watch(configPath, (eventType) => {
+    if (eventType === 'change') {
+        console.log('[CONFIG] Perubahan terdeteksi, reloading config...');
+        delete require.cache[require.resolve(configPath)];
+    }
 });
