@@ -1,5 +1,3 @@
----
-
 ***ZeeBot | 1.0.0*** | ***Created by: KanekiCraynet || Base: Terinspirasi dari HanakoBotz, tapi dengan sentuhan masa depan yang berbeda***
 
 ![Logo ZeeBot](https://files.catbox.moe/movzsb.jpg)  
